@@ -1,38 +1,127 @@
-.App {
+*,
+*::after,
+*::before {
+  box-sizing: border-box;
+}
+
+.frame__github,
+.frame__links a:not(:last-child),
+.frame__demos a:not(:last-child) {
+  margin-right: 1rem;
+}
+
+.grid {
+  display: grid;
+  padding: 1rem;
+  margin: 0 auto;
+  grid-template-columns: 100%;
+  grid-row-gap: 4rem;
+  grid-column-gap: 20vw;
+  max-width: 1200px;
+
+  &__item {
+    height: 60vh;
+    max-height: 500px;
+    position: relative;
+  }
+
+  &__item-img {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+  }
+  
+  &__item-img::after {
+    content: '';
+    background: var(--color-overlay);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    mix-blend-mode: color-dodge;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  &__item-letter {
+    position: absolute;
+    bottom: -4vw;
+    right: -4vw;
+    z-index: 10;
+    font-size: 15vw;
+    line-height: 1;
+  }  
+}
+
+a {
+  text-decoration: none;
+  color: var(--color-link);
+  outline: none;
+}
+
+.frame a {
+  text-transform: lowercase;
+}
+
+.frame {
+  padding: 3rem 5vw;
   text-align: center;
-}
+  position: relative;
+  z-index: 1000;
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
+  &__title {
+    font-size: 1rem;
+    margin: 0 0 1rem;
+    font-weight: 500;
+  }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
+  &__tagline {
+    color: var(--color-tagline);
   }
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
-}
+@media screen and (min-width: 53em) {
+  .frame {
+    position: fixed;
+    text-align: left;
+    z-index: 10000;
+    top: 0;
+    left: 0;
+    display: grid;
+    align-content: space-between;
+    width: 100%;
+    max-width: none;
+    height: 100vh;
+    padding: 3rem;
+    pointer-events: none;
+    grid-template-columns: 75% 25%;
+    grid-template-rows: auto auto auto;
+    grid-template-areas:
+      "title links"
+      "... ..."
+      "github demos";
 
-.App-link {
-  color: #61dafb;
-}
-
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
+    &__tagline {
+      position: relative;
+      margin: 0 0 0 1rem;
+      padding: 0 0 0 1rem;
+    }
   }
-  to {
-    transform: rotate(360deg);
+
+  .frame__title-wrap {
+    grid-area: title;
+    display: flex;
+  }
+
+  .grid {
+    padding: 70vh 4rem;
+    grid-template-columns: repeat(2,calc(50% - 10vw));
+    grid-row-gap: 50vh;
+
+    &__item:nth-child(even) {
+      margin-top: -45vh;
+    }  
   }
 }
