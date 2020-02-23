@@ -17,6 +17,8 @@ import "threelib/shaders/CopyShader";
 const THREE = require("three");
 const imageUrl = require(`./img/3.jpg`);
 
+const imageList = [];
+
 function App() {
   return (
     <div className="App">
@@ -54,175 +56,92 @@ function App() {
           </div>
         </div>
 
-        <div className="grid">
-          <div className="grid__item">
-            {" "}
-            <div
-              className="grid__item-img"
-              style={{ backgroundImage: `url(${imageUrl})` }}
-            ></div>
-            <div className="grid__item-letter" data-blotter="">
-              <canvas
-                className="b-canvas"
-                width="676"
-                height="550"
-                style={{ width: "338px", height: "275px" }}
-              >
-                A9
-              </canvas>
+        <canvas id="canvas"></canvas>
+
+        <div className="grid" data-grid-container>
+          {[...Array(3)].map((x, i) => (
+            <div key={i} className="grid__item" data-grid-item>
+              <div
+                className="grid__item-img"
+                // style={{ backgroundImage: `url(${imageUrl})` }}
+                style={{ background: `yellow`, opacity: 0.5 }}
+                data-src={imageUrl}
+              ></div>
+              <div className="grid__item-letter" data-blotter="">
+                <canvas
+                  className="b-canvas"
+                  width="676"
+                  height="550"
+                  style={{ width: "338px", height: "275px" }}
+                >
+                  A9
+                </canvas>
+              </div>
             </div>
-          </div>
-          <div className="grid__item">
-            <div
-              className="grid__item-img"
-              style={{ backgroundImage: "url(img/3.jpg)" }}
-            ></div>
-            <div className="grid__item-letter" data-blotter="">
-              <canvas
-                className="b-canvas"
-                width="686"
-                height="550"
-                style={{ width: "343px", height: "275px" }}
-              >
-                R4
-              </canvas>
-            </div>
-          </div>
-          <div className="grid__item">
-            <div
-              className="grid__item-img"
-              style={{ backgroundImage: "url(img/4.jpg)" }}
-            ></div>
-            <div className="grid__item-letter" data-blotter="">
-              <canvas
-                className="b-canvas"
-                width="656"
-                height="550"
-                style={{ width: "328px", height: "275px" }}
-              >
-                B7
-              </canvas>
-            </div>
-          </div>
-          <div className="grid__item">
-            <div
-              className="grid__item-img"
-              style={{ backgroundImage: "url(img/8.jpg)" }}
-            ></div>
-            <div className="grid__item-letter" data-blotter="">
-              <canvas
-                className="b-canvas"
-                width="674"
-                height="550"
-                style={{ width: "337px", height: "275px" }}
-              >
-                K3
-              </canvas>
-            </div>
-          </div>
-          <div className="grid__item">
-            <div
-              className="grid__item-img"
-              style={{ backgroundImage: "url(img/5.jpg)" }}
-            ></div>
-            <div className="grid__item-letter" data-blotter="">
-              <canvas
-                className="b-canvas"
-                width="636"
-                height="550"
-                style={{ width: "318px", height: "275px" }}
-              >
-                T2
-              </canvas>
-            </div>
-          </div>
-          <div className="grid__item">
-            <div
-              className="grid__item-img"
-              style={{ backgroundImage: "url(img/6.jpg)" }}
-            ></div>
-            <div className="grid__item-letter" data-blotter="">
-              <canvas
-                className="b-canvas"
-                width="678"
-                height="550"
-                style={{ width: "339px", height: "275px" }}
-              >
-                H8
-              </canvas>
-            </div>
-          </div>
-          <div className="grid__item">
-            <div
-              className="grid__item-img"
-              style={{ backgroundImage: "url(img/10.jpg)" }}
-            ></div>
-            <div className="grid__item-letter" data-blotter="">
-              <canvas
-                className="b-canvas"
-                width="674"
-                height="550"
-                style={{ width: "337px", height: "275px" }}
-              >
-                X5
-              </canvas>
-            </div>
-          </div>
-          <div className="grid__item">
-            <div
-              className="grid__item-img"
-              style={{ backgroundImage: "url(img/1.jpg)" }}
-            ></div>
-            <div className="grid__item-letter" data-blotter="">
-              <canvas
-                className="b-canvas"
-                width="674"
-                height="550"
-                style={{ width: "337px", height: "275px" }}
-              >
-                A6
-              </canvas>
-            </div>
-          </div>
-          <div className="grid__item">
-            <div
-              className="grid__item-img"
-              style={{ backgroundImage: "url(img/9.jpg)" }}
-            ></div>
-            <div className="grid__item-letter" data-blotter="">
-              <canvas
-                className="b-canvas"
-                width="648"
-                height="550"
-                style={{ width: "324px", height: "275px" }}
-              >
-                S2
-              </canvas>
-            </div>
-          </div>
-          <div className="grid__item">
-            <div
-              className="grid__item-img"
-              style={{ backgroundImage: "url(img/7.jpg)" }}
-            ></div>
-            <div className="grid__item-letter" data-blotter="">
-              <canvas
-                className="b-canvas"
-                width="748"
-                height="550"
-                style={{ width: "374px", height: "275px" }}
-              >
-                W4
-              </canvas>
-            </div>
-          </div>
+          ))}
         </div>
       </main>
     </div>
   );
 }
 
+window.addEventListener("resize", event => {
+  const grid = document.querySelector("[data-grid-container]");
+  const canvas = document.getElementById("canvas");
+  const ctx = canvas.getContext("2d");
+
+  canvas.width = grid.clientWidth;
+  canvas.height = grid.clientHeight;
+  canvas.style.width = `${grid.clientWidth}px`;
+  canvas.style.height = `${grid.clientHeight}px`;
+
+  // NOTE: 画像を配置する
+  const gridItems = document.querySelectorAll("[data-grid-item]");
+  const item = gridItems[0];
+
+  for (let i = 0; i < gridItems.length; i++) {
+    const item = gridItems[i];
+    const x = item.offsetLeft;
+    const y = item.offsetTop;
+
+    const img = imageList[i];
+    const width = item.clientWidth;
+    const height = item.clientHeight;
+    ctx.drawImage(img, x, y, width, height);
+  }
+});
+
 window.addEventListener("load", event => {
+  // NOTE: Canvas サイズを指定
+  const grid = document.querySelector("[data-grid-container]");
+  const canvas = document.getElementById("canvas");
+  const ctx = canvas.getContext("2d");
+  canvas.width = grid.clientWidth;
+  canvas.height = grid.clientHeight;
+  canvas.style.width = `${grid.clientWidth}px`;
+  canvas.style.height = `${grid.clientHeight}px`;
+
+  // NOTE: 画像を配置する
+  const gridItems = document.querySelectorAll("[data-grid-item]");
+  for (let i = 0; i < gridItems.length; i++) {
+    const item = gridItems[i];
+    const x = item.offsetLeft;
+    const y = item.offsetTop;
+
+    const img = new Image();
+    const urlNode = item.querySelector("[data-src]");
+    const url = urlNode.dataset.src;
+    const width = item.clientWidth;
+    const height = item.clientHeight;
+
+    img.onload = function() {
+      ctx.drawImage(img, x, y, width, height);
+    };
+    img.src = url;
+
+    imageList.push(img);
+  }
+
   var scene = new THREE.Scene();
 
   // create a camera, which defines where we're looking at.
@@ -239,7 +158,7 @@ window.addEventListener("load", event => {
   webGLRenderer.setSize(window.innerWidth, window.innerHeight);
   webGLRenderer.shadowMapEnabled = true;
 
-  //        // position and point the camera to the center of the scene
+  // position and point the camera to the center of the scene
   camera.position.x = 20;
   camera.position.y = 30;
   camera.position.z = 40;
@@ -260,32 +179,6 @@ window.addEventListener("load", event => {
   scene.add(ambiLight);
 
   scene.add(spotLight);
-  // var plane = new THREE.BoxGeometry(1600, 1600, 0.1, 40, 40);
-  // var cube = new THREE.Mesh(
-  //   plane,
-  //   new THREE.MeshPhongMaterial({
-  //     color: 0xffffff,
-  //     map: THREE.ImageUtils.loadTexture(
-  //       "./assets/textures/general/plaster-diffuse.jpg"
-  //     ),
-  //     normalMap: THREE.ImageUtils.loadTexture(
-  //       "./assets/textures/general/plaster-normal.jpg"
-  //     ),
-  //     normalScale: new THREE.Vector2(0.6, 0.6)
-  //   })
-  // );
-
-  // cube.material.map.wrapS = THREE.RepeatWrapping;
-  // cube.material.map.wrapT = THREE.RepeatWrapping;
-  // cube.material.normalMap.wrapS = THREE.RepeatWrapping;
-  // cube.material.normalMap.wrapT = THREE.RepeatWrapping;
-  // cube.rotation.x = Math.PI / 2;
-  // cube.material.map.repeat.set(80, 80);
-
-  // cube.receiveShadow = true;
-  // cube.position.z = -150;
-  // cube.position.x = -150;
-  // scene.add(cube);
 
   var cube1 = new THREE.Mesh(
     new THREE.BoxGeometry(30, 10, 2),
@@ -320,17 +213,17 @@ window.addEventListener("load", event => {
   var rgbShift = new ShaderPass(THREE.RGBShiftShader);
   rgbShift.enabled = true;
 
-  // var renderPass = new THREE.RenderPass(scene, camera);
   var renderPass = new RenderPass(scene, camera);
 
   var glitchPass = new GlitchPass();
+  glitchPass.enabled = false;
 
   var effectCopy = new ShaderPass(THREE.CopyShader);
   effectCopy.renderToScreen = true;
 
   var composer = new EffectComposer(webGLRenderer);
   composer.addPass(renderPass);
-  // composer.addPass(glitchPass);
+  composer.addPass(glitchPass);
   composer.addPass(rgbShift);
   composer.addPass(effectCopy);
 
@@ -338,8 +231,10 @@ window.addEventListener("load", event => {
 
   function render() {
     requestAnimationFrame(render);
-    // webGLRenderer.render(scene, camera);
     composer.render();
+
+    // rgbShift.uniforms.amount.value += 0.001;
+    // rgbShift.uniforms.angle.value += 0.001;
   }
 });
 
