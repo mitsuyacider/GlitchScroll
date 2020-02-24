@@ -22,7 +22,7 @@ const imageList = [];
 function App() {
   return (
     <div className="App">
-      <div id="WebGL-output"></div>
+      {/* <div id="WebGL-output"></div> */}
       <main>
         <div className="frame">
           <div className="frame__title-wrap">
@@ -58,7 +58,7 @@ function App() {
 
         <canvas id="canvas"></canvas>
 
-        <div className="grid" data-grid-container>
+        <div className="grid" data-grid-container id="WebGL-output">
           {[...Array(3)].map((x, i) => (
             <div key={i} className="grid__item" data-grid-item>
               <div
@@ -159,10 +159,10 @@ window.addEventListener("load", event => {
   webGLRenderer.shadowMapEnabled = true;
 
   // position and point the camera to the center of the scene
-  camera.position.x = 20;
-  camera.position.y = 30;
+  camera.position.x = 0;
+  camera.position.y = 0;
   camera.position.z = 40;
-  camera.lookAt(new THREE.Vector3(-15, -10, -25));
+  camera.lookAt(new THREE.Vector3(0, 0, 0));
 
   // add spotlight for the shadows
   var spotLight = new THREE.SpotLight(0xffffff);
@@ -180,34 +180,42 @@ window.addEventListener("load", event => {
 
   scene.add(spotLight);
 
-  var cube1 = new THREE.Mesh(
-    new THREE.BoxGeometry(30, 10, 2),
-    new THREE.MeshPhongMaterial({ color: 0xff0000 })
-  );
-  cube1.position.x = -15;
-  cube1.position.y = 5;
-  cube1.position.z = 15;
-  cube1.castShadow = true;
-  scene.add(cube1);
+  // var cube1 = new THREE.Mesh(
+  //   new THREE.BoxGeometry(30, 10, 2),
+  //   new THREE.MeshPhongMaterial({ color: 0xff0000 })
+  // );
+  // cube1.position.x = -15;
+  // cube1.position.y = 5;
+  // cube1.position.z = 15;
+  // cube1.castShadow = true;
+  // scene.add(cube1);
 
-  var cube2 = cube1.clone();
-  cube2.material = cube1.material.clone();
-  cube2.material.color = new THREE.Color(0x00ff00);
-  cube2.position.z = 5;
-  cube2.position.x = -20;
-  scene.add(cube2);
+  // var cube2 = cube1.clone();
+  // cube2.material = cube1.material.clone();
+  // cube2.material.color = new THREE.Color(0x00ff00);
+  // cube2.position.z = 5;
+  // cube2.position.x = -20;
+  // scene.add(cube2);
 
-  var cube3 = cube1.clone();
-  cube3.material = cube1.material.clone();
-  cube3.material.color = new THREE.Color(0x0000ff);
-  cube3.position.z = -8;
-  cube3.position.x = -25;
-  scene.add(cube3);
+  // var cube3 = cube1.clone();
+  // cube3.material = cube1.material.clone();
+  // cube3.material.color = new THREE.Color(0x0000ff);
+  // cube3.position.z = -8;
+  // cube3.position.x = -25;
+  // scene.add(cube3);
+
+  var cardTexture = THREE.ImageUtils.loadTexture('./img/3.jpg');
+  var cardGeometry = new THREE.PlaneGeometry(16, 25, 0, 0);
+  var material = new THREE.MeshLambertMaterial({ map : cardTexture });
+
+  var card = new THREE.Mesh(cardGeometry, material);
+  scene.add(card);
 
   // var mesh;
 
   // add the output of the renderer to the html element
-
+  const glCanvas = webGLRenderer.domElement
+  glCanvas.classList.add("canvas")
   document.getElementById("WebGL-output").appendChild(webGLRenderer.domElement);
 
   var rgbShift = new ShaderPass(THREE.RGBShiftShader);
