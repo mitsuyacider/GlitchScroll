@@ -56,10 +56,8 @@ function App() {
           </div>
         </div>
 
-        <canvas id="canvas"></canvas>
-
         <div className="grid" data-grid-container id="WebGL-output">
-          {[...Array(3)].map((x, i) => (
+          {[...Array(4)].map((x, i) => (
             <div key={i} className="grid__item" data-grid-item>
               <div
                 className="grid__item-img"
@@ -85,83 +83,67 @@ function App() {
   );
 }
 
-window.addEventListener("resize", event => {
-  const grid = document.querySelector("[data-grid-container]");
-  const canvas = document.getElementById("canvas");
-  const ctx = canvas.getContext("2d");
+// window.addEventListener("resize", event => {
+//   const grid = document.querySelector("[data-grid-container]");
+//   const canvas = document.getElementById("canvas");
+//   const ctx = canvas.getContext("2d");
 
-  canvas.width = grid.clientWidth;
-  canvas.height = grid.clientHeight;
-  canvas.style.width = `${grid.clientWidth}px`;
-  canvas.style.height = `${grid.clientHeight}px`;
+//   canvas.width = grid.clientWidth;
+//   canvas.height = grid.clientHeight;
+//   canvas.style.width = `${grid.clientWidth}px`;
+//   canvas.style.height = `${grid.clientHeight}px`;
 
-  // NOTE: 画像を配置する
-  const gridItems = document.querySelectorAll("[data-grid-item]");
-  const item = gridItems[0];
+//   // NOTE: 画像を配置する
+//   const gridItems = document.querySelectorAll("[data-grid-item]");
+//   const item = gridItems[0];
 
-  for (let i = 0; i < gridItems.length; i++) {
-    const item = gridItems[i];
-    const x = item.offsetLeft;
-    const y = item.offsetTop;
+//   for (let i = 0; i < gridItems.length; i++) {
+//     const item = gridItems[i];
+//     const x = item.offsetLeft;
+//     const y = item.offsetTop;
 
-    const img = imageList[i];
-    const width = item.clientWidth;
-    const height = item.clientHeight;
-    ctx.drawImage(img, x, y, width, height);
-  }
-});
+//     const img = imageList[i];
+//     const width = item.clientWidth;
+//     const height = item.clientHeight;
+//     ctx.drawImage(img, x, y, width, height);
+//   }
+// });
 
 window.addEventListener("load", event => {
   // NOTE: Canvas サイズを指定
   const grid = document.querySelector("[data-grid-container]");
-  const canvas = document.getElementById("canvas");
-  const ctx = canvas.getContext("2d");
+  var webGLRenderer = new THREE.WebGLRenderer();
+
+  const canvas = webGLRenderer.domElement;
+  canvas.classList.add("canvas");
   canvas.width = grid.clientWidth;
   canvas.height = grid.clientHeight;
   canvas.style.width = `${grid.clientWidth}px`;
   canvas.style.height = `${grid.clientHeight}px`;
-
-  // NOTE: 画像を配置する
-  const gridItems = document.querySelectorAll("[data-grid-item]");
-  for (let i = 0; i < gridItems.length; i++) {
-    const item = gridItems[i];
-    const x = item.offsetLeft;
-    const y = item.offsetTop;
-
-    const img = new Image();
-    const urlNode = item.querySelector("[data-src]");
-    const url = urlNode.dataset.src;
-    const width = item.clientWidth;
-    const height = item.clientHeight;
-
-    img.onload = function() {
-      ctx.drawImage(img, x, y, width, height);
-    };
-    img.src = url;
-
-    imageList.push(img);
-  }
+  document.getElementById("WebGL-output").appendChild(canvas);
 
   var scene = new THREE.Scene();
 
   // create a camera, which defines where we're looking at.
-  var camera = new THREE.PerspectiveCamera(
-    45,
-    window.innerWidth / window.innerHeight,
-    0.1,
-    1000
+  // var camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+  var camera = new THREE.OrthographicCamera(
+    -canvas.width,
+    canvas.width,
+    canvas.height,
+    -canvas.height,
+    0,
+    1
   );
 
   // create a render and set the size
-  var webGLRenderer = new THREE.WebGLRenderer();
   webGLRenderer.setClearColor(new THREE.Color(0xaaaaff, 1.0));
-  webGLRenderer.setSize(window.innerWidth, window.innerHeight);
+  webGLRenderer.setSize(canvas.width, canvas.height);
   webGLRenderer.shadowMapEnabled = true;
 
   // position and point the camera to the center of the scene
   camera.position.x = 0;
   camera.position.y = 0;
-  camera.position.z = 40;
+  camera.position.z = 1;
   camera.lookAt(new THREE.Vector3(0, 0, 0));
 
   // add spotlight for the shadows
@@ -180,46 +162,37 @@ window.addEventListener("load", event => {
 
   scene.add(spotLight);
 
-  // var cube1 = new THREE.Mesh(
-  //   new THREE.BoxGeometry(30, 10, 2),
-  //   new THREE.MeshPhongMaterial({ color: 0xff0000 })
-  // );
-  // cube1.position.x = -15;
-  // cube1.position.y = 5;
-  // cube1.position.z = 15;
-  // cube1.castShadow = true;
-  // scene.add(cube1);
+  // NOTE: 画像を配置する
+  const gridItems = document.querySelectorAll("[data-grid-item]");
 
-  // var cube2 = cube1.clone();
-  // cube2.material = cube1.material.clone();
-  // cube2.material.color = new THREE.Color(0x00ff00);
-  // cube2.position.z = 5;
-  // cube2.position.x = -20;
-  // scene.add(cube2);
+  for (let i = 0; i < gridItems.length; i++) {
+    const item = gridItems[i];
+    const x = item.offsetLeft;
+    const y = item.offsetTop;
 
-  // var cube3 = cube1.clone();
-  // cube3.material = cube1.material.clone();
-  // cube3.material.color = new THREE.Color(0x0000ff);
-  // cube3.position.z = -8;
-  // cube3.position.x = -25;
-  // scene.add(cube3);
+    const urlNode = item.querySelector("[data-src]");
+    const url = urlNode.dataset.src;
+    const cardTexture = THREE.ImageUtils.loadTexture(url);
+    const width = item.clientWidth;
+    const height = item.clientHeight;
+    const cardGeometry = new THREE.PlaneGeometry(width * 2, height * 2, 0, 0);
+    const material = new THREE.MeshLambertMaterial({ map: cardTexture });
+    const card = new THREE.Mesh(cardGeometry, material);
 
-  var cardTexture = THREE.ImageUtils.loadTexture('./img/3.jpg');
-  var cardGeometry = new THREE.PlaneGeometry(16, 25, 0, 0);
-  var material = new THREE.MeshLambertMaterial({ map : cardTexture });
+    // NOTE: まずは原点移動
+    card.position.x = (-canvas.width / 2) * 2 + (width / 2) * 2;
+    card.position.y = (canvas.height / 2) * 2 - (height / 2) * 2;
 
-  var card = new THREE.Mesh(cardGeometry, material);
-  scene.add(card);
+    card.position.x += x * 2;
+    card.position.y -= y * 2;
 
-  // var mesh;
+    scene.add(card);
 
-  // add the output of the renderer to the html element
-  const glCanvas = webGLRenderer.domElement
-  glCanvas.classList.add("canvas")
-  document.getElementById("WebGL-output").appendChild(webGLRenderer.domElement);
+    imageList.push(card);
+  }
 
   var rgbShift = new ShaderPass(THREE.RGBShiftShader);
-  rgbShift.enabled = true;
+  rgbShift.enabled = false;
 
   var renderPass = new RenderPass(scene, camera);
 
