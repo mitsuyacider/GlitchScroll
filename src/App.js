@@ -59,12 +59,7 @@ function App() {
         <div className="grid" data-grid-container id="WebGL-output">
           {[...Array(4)].map((x, i) => (
             <div key={i} className="grid__item" data-grid-item>
-              <div
-                className="grid__item-img"
-                // style={{ backgroundImage: `url(${imageUrl})` }}
-                style={{ background: `yellow`, opacity: 0.5 }}
-                data-src={imageUrl}
-              ></div>
+              <div className="grid__item-img" data-src={imageUrl}></div>
               <div className="grid__item-letter" data-blotter="">
                 <canvas
                   className="b-canvas"
@@ -92,7 +87,7 @@ window.addEventListener("resize", event => {
   canvas.style.width = `${grid.clientWidth}px`;
   canvas.style.height = `${grid.clientHeight}px`;
   webGLRenderer.setSize(canvas.width, canvas.height);
-  
+
   camera = new THREE.OrthographicCamera(
     -canvas.width,
     canvas.width,
@@ -105,23 +100,22 @@ window.addEventListener("resize", event => {
   camera.position.x = 0;
   camera.position.y = 0;
   camera.position.z = 1;
-  camera.lookAt(new THREE.Vector3(0, 0, 0));  
+  camera.lookAt(new THREE.Vector3(0, 0, 0));
 
   renderPass.camera = camera;
-  
+
   // NOTE: 前回のplaneをsceneから外す
-  imageList.map(card => scene.remove(card))
-  imageList = []
+  imageList.map(card => scene.remove(card));
+  imageList = [];
 
   // NOTE: 画像を配置する
-  const gridItems = document.querySelectorAll("[data-grid-item]");  
+  const gridItems = document.querySelectorAll("[data-grid-item]");
   for (let i = 0; i < gridItems.length; i++) {
-
     const item = gridItems[i];
     const x = item.offsetLeft;
     const y = item.offsetTop;
 
-    const texture = textures[i]
+    const texture = textures[i];
     const width = item.clientWidth;
     const height = item.clientHeight;
     const cardGeometry = new THREE.PlaneGeometry(width * 2, height * 2, 0, 0);
@@ -138,30 +132,29 @@ window.addEventListener("resize", event => {
     scene.add(card);
 
     imageList.push(card);
-  } 
+  }
 });
 
 const webGLRenderer = new THREE.WebGLRenderer();
 const scene = new THREE.Scene();
-const textures = []
-let camera = ''
-let renderPass = '';
+const textures = [];
+let camera = "";
+let renderPass = "";
 window.addEventListener("load", event => {
   // NOTE: Canvas サイズを指定
   const grid = document.querySelector("[data-grid-container]");
-  
+
   const canvas = webGLRenderer.domElement;
   canvas.classList.add("canvas");
   canvas.width = grid.clientWidth;
   canvas.height = grid.clientHeight;
   canvas.style.width = `${grid.clientWidth}px`;
   canvas.style.height = `${grid.clientHeight}px`;
-  document.getElementById("WebGL-output").appendChild(canvas);
 
-  // var scene = new THREE.Scene();
+  const container = document.getElementById("WebGL-output");
+  container.insertBefore(canvas, container.firstChild);
 
   // create a camera, which defines where we're looking at.
-  // var camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
   camera = new THREE.OrthographicCamera(
     -canvas.width,
     canvas.width,
@@ -195,21 +188,44 @@ window.addEventListener("load", event => {
 
   var ambiLight = new THREE.AmbientLight(0x444444);
   scene.add(ambiLight);
-
   scene.add(spotLight);
+
+  var rgbShift = new ShaderPass(THREE.RGBShiftShader);
+  rgbShift.enabled = false;
+
+  renderPass = new RenderPass(scene, camera);
+  var glitchPass = new GlitchPass();
+  glitchPass.enabled = false;
+
+  var effectCopy = new ShaderPass(THREE.CopyShader);
+  effectCopy.renderToScreen = true;
+
+  var composer = new EffectComposer(webGLRenderer);
+  composer.addPass(renderPass);
+  composer.addPass(glitchPass);
+  composer.addPass(rgbShift);
+  composer.addPass(effectCopy);
 
   // NOTE: 画像を配置する
   const gridItems = document.querySelectorAll("[data-grid-item]");
 
   for (let i = 0; i < gridItems.length; i++) {
     const item = gridItems[i];
+    item.addEventListener("mouseover", e => {
+      rgbShift.enabled = true;
+    });
+
+    item.addEventListener("mouseout", e => {
+      rgbShift.enabled = false;
+    });
+
     const x = item.offsetLeft;
     const y = item.offsetTop;
 
     const urlNode = item.querySelector("[data-src]");
     const url = urlNode.dataset.src;
     const cardTexture = THREE.ImageUtils.loadTexture(url);
-    textures.push(cardTexture)
+    textures.push(cardTexture);
 
     const width = item.clientWidth;
     const height = item.clientHeight;
@@ -228,22 +244,6 @@ window.addEventListener("load", event => {
 
     imageList.push(card);
   }
-
-  var rgbShift = new ShaderPass(THREE.RGBShiftShader);
-  rgbShift.enabled = false;
-
-  renderPass = new RenderPass(scene, camera);
-  var glitchPass = new GlitchPass();
-  glitchPass.enabled = false;
-
-  var effectCopy = new ShaderPass(THREE.CopyShader);
-  effectCopy.renderToScreen = true;
-
-  var composer = new EffectComposer(webGLRenderer);
-  composer.addPass(renderPass);
-  composer.addPass(glitchPass);
-  composer.addPass(rgbShift);
-  composer.addPass(effectCopy);
 
   render();
 
