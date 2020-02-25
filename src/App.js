@@ -17,7 +17,7 @@ import "threelib/shaders/CopyShader";
 const THREE = require("three");
 const imageUrl = require(`./img/3.jpg`);
 
-const imageList = [];
+let imageList = [];
 
 function App() {
   return (
@@ -83,37 +83,73 @@ function App() {
   );
 }
 
-// window.addEventListener("resize", event => {
-//   const grid = document.querySelector("[data-grid-container]");
-//   const canvas = document.getElementById("canvas");
-//   const ctx = canvas.getContext("2d");
+window.addEventListener("resize", event => {
+  const grid = document.querySelector("[data-grid-container]");
+  const canvas = webGLRenderer.domElement;
+  canvas.classList.add("canvas");
+  canvas.width = grid.clientWidth;
+  canvas.height = grid.clientHeight;
+  canvas.style.width = `${grid.clientWidth}px`;
+  canvas.style.height = `${grid.clientHeight}px`;
+  webGLRenderer.setSize(canvas.width, canvas.height);
+  
+  camera = new THREE.OrthographicCamera(
+    -canvas.width,
+    canvas.width,
+    canvas.height,
+    -canvas.height,
+    0,
+    1
+  );
 
-//   canvas.width = grid.clientWidth;
-//   canvas.height = grid.clientHeight;
-//   canvas.style.width = `${grid.clientWidth}px`;
-//   canvas.style.height = `${grid.clientHeight}px`;
+  camera.position.x = 0;
+  camera.position.y = 0;
+  camera.position.z = 1;
+  camera.lookAt(new THREE.Vector3(0, 0, 0));  
 
-//   // NOTE: 画像を配置する
-//   const gridItems = document.querySelectorAll("[data-grid-item]");
-//   const item = gridItems[0];
+  renderPass.camera = camera;
+  
+  // NOTE: 前回のplaneをsceneから外す
+  imageList.map(card => scene.remove(card))
+  imageList = []
 
-//   for (let i = 0; i < gridItems.length; i++) {
-//     const item = gridItems[i];
-//     const x = item.offsetLeft;
-//     const y = item.offsetTop;
+  // NOTE: 画像を配置する
+  const gridItems = document.querySelectorAll("[data-grid-item]");  
+  for (let i = 0; i < gridItems.length; i++) {
 
-//     const img = imageList[i];
-//     const width = item.clientWidth;
-//     const height = item.clientHeight;
-//     ctx.drawImage(img, x, y, width, height);
-//   }
-// });
+    const item = gridItems[i];
+    const x = item.offsetLeft;
+    const y = item.offsetTop;
 
+    const texture = textures[i]
+    const width = item.clientWidth;
+    const height = item.clientHeight;
+    const cardGeometry = new THREE.PlaneGeometry(width * 2, height * 2, 0, 0);
+    const material = new THREE.MeshLambertMaterial({ map: texture });
+    const card = new THREE.Mesh(cardGeometry, material);
+
+    // NOTE: まずは原点移動
+    card.position.x = (-canvas.width / 2) * 2 + (width / 2) * 2;
+    card.position.y = (canvas.height / 2) * 2 - (height / 2) * 2;
+
+    card.position.x += x * 2;
+    card.position.y -= y * 2;
+
+    scene.add(card);
+
+    imageList.push(card);
+  } 
+});
+
+const webGLRenderer = new THREE.WebGLRenderer();
+const scene = new THREE.Scene();
+const textures = []
+let camera = ''
+let renderPass = '';
 window.addEventListener("load", event => {
   // NOTE: Canvas サイズを指定
   const grid = document.querySelector("[data-grid-container]");
-  var webGLRenderer = new THREE.WebGLRenderer();
-
+  
   const canvas = webGLRenderer.domElement;
   canvas.classList.add("canvas");
   canvas.width = grid.clientWidth;
@@ -122,11 +158,11 @@ window.addEventListener("load", event => {
   canvas.style.height = `${grid.clientHeight}px`;
   document.getElementById("WebGL-output").appendChild(canvas);
 
-  var scene = new THREE.Scene();
+  // var scene = new THREE.Scene();
 
   // create a camera, which defines where we're looking at.
   // var camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-  var camera = new THREE.OrthographicCamera(
+  camera = new THREE.OrthographicCamera(
     -canvas.width,
     canvas.width,
     canvas.height,
@@ -173,6 +209,8 @@ window.addEventListener("load", event => {
     const urlNode = item.querySelector("[data-src]");
     const url = urlNode.dataset.src;
     const cardTexture = THREE.ImageUtils.loadTexture(url);
+    textures.push(cardTexture)
+
     const width = item.clientWidth;
     const height = item.clientHeight;
     const cardGeometry = new THREE.PlaneGeometry(width * 2, height * 2, 0, 0);
@@ -194,8 +232,7 @@ window.addEventListener("load", event => {
   var rgbShift = new ShaderPass(THREE.RGBShiftShader);
   rgbShift.enabled = false;
 
-  var renderPass = new RenderPass(scene, camera);
-
+  renderPass = new RenderPass(scene, camera);
   var glitchPass = new GlitchPass();
   glitchPass.enabled = false;
 
