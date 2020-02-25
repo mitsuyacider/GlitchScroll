@@ -194,17 +194,15 @@ window.addEventListener("load", event => {
   rgbShift.enabled = false;
 
   renderPass = new RenderPass(scene, camera);
+
   var glitchPass = new GlitchPass();
   glitchPass.enabled = false;
+  glitchPass.goWild = true;
 
   var effectCopy = new ShaderPass(THREE.CopyShader);
   effectCopy.renderToScreen = true;
 
   var composer = new EffectComposer(webGLRenderer);
-  composer.addPass(renderPass);
-  composer.addPass(glitchPass);
-  composer.addPass(rgbShift);
-  composer.addPass(effectCopy);
 
   // NOTE: 画像を配置する
   const gridItems = document.querySelectorAll("[data-grid-item]");
@@ -212,11 +210,11 @@ window.addEventListener("load", event => {
   for (let i = 0; i < gridItems.length; i++) {
     const item = gridItems[i];
     item.addEventListener("mouseover", e => {
-      rgbShift.enabled = true;
+      glitchPass.enabled = true;
     });
 
     item.addEventListener("mouseout", e => {
-      rgbShift.enabled = false;
+      glitchPass.enabled = false;
     });
 
     const x = item.offsetLeft;
@@ -240,10 +238,30 @@ window.addEventListener("load", event => {
     card.position.x += x * 2;
     card.position.y -= y * 2;
 
-    scene.add(card);
+    const s = new THREE.Scene();
+    s.add(ambiLight);
+    s.add(spotLight);
+    s.add(card);
+
+    const c = new THREE.OrthographicCamera(
+      -canvas.width,
+      canvas.width,
+      canvas.height,
+      -canvas.height,
+      0,
+      1
+    );
+    const rPass = new RenderPass(s, c);
+    // scene.add(card);
+    composer.addPass(rPass);
 
     imageList.push(card);
   }
+
+  composer.addPass(renderPass);
+  composer.addPass(glitchPass);
+  composer.addPass(rgbShift);
+  composer.addPass(effectCopy);
 
   render();
 
