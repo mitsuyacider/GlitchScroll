@@ -287,11 +287,6 @@ window.addEventListener("load", event => {
     card.position.x += x * 2;
     card.position.y -= y * 2;
 
-    const s = new THREE.Scene();
-    s.add(ambiLight);
-    s.add(spotLight);
-    s.add(card);
-
     const c = new THREE.OrthographicCamera(
       -canvas.width,
       canvas.width,
@@ -300,8 +295,8 @@ window.addEventListener("load", event => {
       0,
       1
     );
-    const rPass = new RenderPass(s, c);
-    // scene.add(card);
+    const rPass = new RenderPass(scene, camera);
+    scene.add(card);
     composer.addPass(rPass);
 
     imageList.push(card);
