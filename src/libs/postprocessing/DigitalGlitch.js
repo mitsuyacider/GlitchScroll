@@ -9,7 +9,7 @@
  * amount: shift distance (1 is width of input)
  * angle: shift angle in radians
  */
-
+const THREE = require("three");
 THREE.DigitalGlitch = {
 
 	uniforms: {

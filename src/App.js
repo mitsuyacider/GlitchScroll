@@ -6,11 +6,13 @@ import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { GlitchPass } from "three/examples/jsm/postprocessing/GlitchPass.js";
 import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
 
+
 // import "threelib/postprocessing/RenderPass";
 import "threelib/postprocessing/ShaderPass";
-
+import "threelib/postprocessing/DigitalGlitch"
 import "threelib/shaders/RGBShiftShader";
 import "threelib/shaders/CopyShader";
+
 
 // import "threelib/OBJMTLLoader";
 
@@ -213,8 +215,55 @@ window.addEventListener("load", event => {
 
     const width = item.clientWidth;
     const height = item.clientHeight;
+
     const cardGeometry = new THREE.PlaneGeometry(width * 2, height * 2, 0, 0);
-    const material = new THREE.MeshLambertMaterial({ map: cardTexture });
+    // const material = new THREE.MeshLambertMaterial({ map: cardTexture });
+    // const material = new THREE.ShaderMaterial( {      
+    //   uniforms: THREE.RGBShiftShader.uniforms,
+    //   vertexShader: THREE.RGBShiftShader.vertexShader,
+    //   fragmentShader: THREE.RGBShiftShader.fragmentShader
+    // } );
+
+    // material.uniforms.tDiffuse.value = cardTexture
+    // material.uniforms.amount.value = 0.001
+    // material.uniforms.angle.value = 0.1
+
+
+    const material = new THREE.ShaderMaterial( {      
+      uniforms: THREE.DigitalGlitch.uniforms,
+      vertexShader: THREE.DigitalGlitch.vertexShader,
+      fragmentShader: THREE.DigitalGlitch.fragmentShader
+    } );
+
+    material.uniforms.tDiffuse.value = cardTexture
+    material.uniforms.tDisp = 64
+
+
+    // var vertShader = document.getElementById("vertex-shader").innerHTML;
+    // var fragShader = document.getElementById("fragment-shader-1").innerHTML;
+
+    // var attributes = {};
+    // var uniforms = {
+    //     time: {type: 'f', value: 0.2},
+    //     scale: {type: 'f', value: 0.2},
+    //     alpha: {type: 'f', value: 0.6},
+    //     resolution: {type: "v2", value: new THREE.Vector2()}
+    // };
+
+    // uniforms.resolution.value.x = window.innerWidth;
+    // uniforms.resolution.value.y = window.innerHeight;
+
+    // var material = new THREE.ShaderMaterial({
+    //     uniforms: uniforms,
+    //     // attributes: attributes,
+    //     vertexShader: vertShader,
+    //     fragmentShader: fragShader,
+    //     transparent: true,
+    //     map:cardTexture
+    // });
+
+    
+
     const card = new THREE.Mesh(cardGeometry, material);
 
     // NOTE: まずは原点移動
@@ -248,8 +297,19 @@ window.addEventListener("load", event => {
   render();
 
   function render() {
+    imageList.map(mesh => {
+      // console.log(mesh.material.uniforms.time.value += 0.01)
+      mesh.material.uniforms.angle.value = 0.1
+      // mesh.material.materials.forEach(function(e) {
+      //   e.uniforms.time.value += 0.01;
+      // })
+    })
+  //   cube.material.materials.forEach(function (e) {
+  //     e.uniforms.time.value += 0.01;
+  // });
     requestAnimationFrame(render);
     composer.render();
+    // webGLRenderer.render(scene, camera);
 
     // rgbShift.uniforms.amount.value += 0.001;
     // rgbShift.uniforms.angle.value += 0.001;
