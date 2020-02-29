@@ -15,11 +15,15 @@ import "threelib/shaders/CopyShader";
 // import "threelib/OBJMTLLoader";
 
 const THREE = require("three");
-const imageUrl = require(`./img/3.jpg`);
-
 let imageList = [];
 
 function App() {
+  const fileUrlList = [];
+  for (let i = 1; i < 5; i++) {
+    const url = `./img/${i}.jpg`;
+    fileUrlList.push(url);
+  }
+
   return (
     <div className="App">
       {/* <div id="WebGL-output"></div> */}
@@ -59,7 +63,7 @@ function App() {
         <div className="grid" data-grid-container id="WebGL-output">
           {[...Array(4)].map((x, i) => (
             <div key={i} className="grid__item" data-grid-item>
-              <div className="grid__item-img" data-src={imageUrl}></div>
+              <div className="grid__item-img" data-src={fileUrlList[i]}></div>
               <div className="grid__item-letter" data-blotter="">
                 <canvas
                   className="b-canvas"
@@ -207,6 +211,12 @@ window.addEventListener("load", event => {
   // NOTE: 画像を配置する
   const gridItems = document.querySelectorAll("[data-grid-item]");
 
+  const originalMaterial = new THREE.ShaderMaterial({
+    uniforms: THREE.DigitalGlitch.uniforms,
+    vertexShader: THREE.DigitalGlitch.vertexShader,
+    fragmentShader: THREE.DigitalGlitch.fragmentShader
+  });
+
   for (let i = 0; i < gridItems.length; i++) {
     const item = gridItems[i];
     const x = item.offsetLeft;
@@ -221,12 +231,10 @@ window.addEventListener("load", event => {
     const height = item.clientHeight;
 
     const cardGeometry = new THREE.PlaneGeometry(width * 2, height * 2, 0, 0);
-    const material = new THREE.ShaderMaterial({
-      uniforms: THREE.DigitalGlitch.uniforms,
-      vertexShader: THREE.DigitalGlitch.vertexShader,
-      fragmentShader: THREE.DigitalGlitch.fragmentShader
-    });
 
+    const material = originalMaterial.clone();
+    material.uniforms = THREE.UniformsUtils.clone(originalMaterial.uniforms);
+    material.needsUpdate = true;
     material.uniforms.tDiffuse.value = cardTexture;
     material.uniforms.tDisp.value = cardTexture;
     const card = new THREE.Mesh(cardGeometry, material);
@@ -245,6 +253,7 @@ window.addEventListener("load", event => {
   for (let i = 0; i < gridItems.length; i++) {
     const item = gridItems[i];
     const card = imageList[i];
+
     item.addEventListener("mouseover", e => {
       card.material.uniforms.amount.value = 1.1;
     });
