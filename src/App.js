@@ -6,13 +6,11 @@ import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { GlitchPass } from "three/examples/jsm/postprocessing/GlitchPass.js";
 import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
 
-
 // import "threelib/postprocessing/RenderPass";
 import "threelib/postprocessing/ShaderPass";
-import "threelib/postprocessing/DigitalGlitch"
+import "threelib/postprocessing/DigitalGlitch";
 import "threelib/shaders/RGBShiftShader";
 import "threelib/shaders/CopyShader";
-
 
 // import "threelib/OBJMTLLoader";
 
@@ -211,14 +209,6 @@ window.addEventListener("load", event => {
 
   for (let i = 0; i < gridItems.length; i++) {
     const item = gridItems[i];
-    item.addEventListener("mouseover", e => {
-      glitchPass.enabled = true;
-    });
-
-    item.addEventListener("mouseout", e => {
-      glitchPass.enabled = false;
-    });
-
     const x = item.offsetLeft;
     const y = item.offsetTop;
 
@@ -231,53 +221,14 @@ window.addEventListener("load", event => {
     const height = item.clientHeight;
 
     const cardGeometry = new THREE.PlaneGeometry(width * 2, height * 2, 0, 0);
-    // const material = new THREE.MeshLambertMaterial({ map: cardTexture });
-    // const material = new THREE.ShaderMaterial( {      
-    //   uniforms: THREE.RGBShiftShader.uniforms,
-    //   vertexShader: THREE.RGBShiftShader.vertexShader,
-    //   fragmentShader: THREE.RGBShiftShader.fragmentShader
-    // } );
-
-    // material.uniforms.tDiffuse.value = cardTexture
-    // material.uniforms.amount.value = 0.001
-    // material.uniforms.angle.value = 0.1
-
-
-    const material = new THREE.ShaderMaterial( {      
+    const material = new THREE.ShaderMaterial({
       uniforms: THREE.DigitalGlitch.uniforms,
       vertexShader: THREE.DigitalGlitch.vertexShader,
       fragmentShader: THREE.DigitalGlitch.fragmentShader
-    } );
+    });
 
-    material.uniforms.tDiffuse.value = cardTexture
-    material.uniforms.tDisp = 64
-
-
-    // var vertShader = document.getElementById("vertex-shader").innerHTML;
-    // var fragShader = document.getElementById("fragment-shader-1").innerHTML;
-
-    // var attributes = {};
-    // var uniforms = {
-    //     time: {type: 'f', value: 0.2},
-    //     scale: {type: 'f', value: 0.2},
-    //     alpha: {type: 'f', value: 0.6},
-    //     resolution: {type: "v2", value: new THREE.Vector2()}
-    // };
-
-    // uniforms.resolution.value.x = window.innerWidth;
-    // uniforms.resolution.value.y = window.innerHeight;
-
-    // var material = new THREE.ShaderMaterial({
-    //     uniforms: uniforms,
-    //     // attributes: attributes,
-    //     vertexShader: vertShader,
-    //     fragmentShader: fragShader,
-    //     transparent: true,
-    //     map:cardTexture
-    // });
-
-    
-
+    material.uniforms.tDiffuse.value = cardTexture;
+    material.uniforms.tDisp.value = cardTexture;
     const card = new THREE.Mesh(cardGeometry, material);
 
     // NOTE: まずは原点移動
@@ -287,20 +238,24 @@ window.addEventListener("load", event => {
     card.position.x += x * 2;
     card.position.y -= y * 2;
 
-    const c = new THREE.OrthographicCamera(
-      -canvas.width,
-      canvas.width,
-      canvas.height,
-      -canvas.height,
-      0,
-      1
-    );
-    const rPass = new RenderPass(scene, camera);
     scene.add(card);
-    composer.addPass(rPass);
-
     imageList.push(card);
   }
+
+  for (let i = 0; i < gridItems.length; i++) {
+    const item = gridItems[i];
+    const card = imageList[i];
+    item.addEventListener("mouseover", e => {
+      card.material.uniforms.amount.value = 1.1;
+    });
+
+    item.addEventListener("mouseout", e => {
+      glitchPass.enabled = false;
+      resetMaterial();
+    });
+  }
+
+  resetMaterial();
 
   composer.addPass(renderPass);
   composer.addPass(glitchPass);
@@ -312,20 +267,35 @@ window.addEventListener("load", event => {
   function render() {
     imageList.map(mesh => {
       // console.log(mesh.material.uniforms.time.value += 0.01)
-      mesh.material.uniforms.angle.value = 0.1
+      mesh.material.uniforms.angle.value = 0.1;
       // mesh.material.materials.forEach(function(e) {
       //   e.uniforms.time.value += 0.01;
       // })
-    })
-  //   cube.material.materials.forEach(function (e) {
-  //     e.uniforms.time.value += 0.01;
-  // });
+    });
+    //   cube.material.materials.forEach(function (e) {
+    //     e.uniforms.time.value += 0.01;
+    // });
     requestAnimationFrame(render);
     composer.render();
     // webGLRenderer.render(scene, camera);
 
     // rgbShift.uniforms.amount.value += 0.001;
     // rgbShift.uniforms.angle.value += 0.001;
+  }
+
+  function resetMaterial() {
+    imageList.map(card => {
+      const material = card.material;
+      material.uniforms.byp.value = 0;
+      material.uniforms.amount.value = 0;
+      material.uniforms.angle.value = 0;
+      material.uniforms.seed.value = 0;
+      material.uniforms.seed_x.value = 0;
+      material.uniforms.seed_y.value = 0;
+      material.uniforms.distortion_x.value = 0;
+      material.uniforms.distortion_y.value = 0;
+      material.uniforms.col_s.value = 0;
+    });
   }
 });
 
