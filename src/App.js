@@ -113,6 +113,12 @@ window.addEventListener("resize", event => {
   imageList = [];
 
   // NOTE: 画像を配置する
+  const originalMaterial = new THREE.ShaderMaterial({
+    uniforms: THREE.DigitalGlitch.uniforms,
+    vertexShader: THREE.DigitalGlitch.vertexShader,
+    fragmentShader: THREE.DigitalGlitch.fragmentShader
+  });
+
   const gridItems = document.querySelectorAll("[data-grid-item]");
   for (let i = 0; i < gridItems.length; i++) {
     const item = gridItems[i];
@@ -123,7 +129,14 @@ window.addEventListener("resize", event => {
     const width = item.clientWidth;
     const height = item.clientHeight;
     const cardGeometry = new THREE.PlaneGeometry(width * 2, height * 2, 0, 0);
-    const material = new THREE.MeshLambertMaterial({ map: texture });
+    // const material = new THREE.MeshLambertMaterial({ map: texture });
+
+    const material = originalMaterial.clone();
+    material.uniforms = THREE.UniformsUtils.clone(originalMaterial.uniforms);
+    material.needsUpdate = true;
+    material.uniforms.tDiffuse.value = texture;
+    material.uniforms.tDisp.value = texture;
+
     const card = new THREE.Mesh(cardGeometry, material);
 
     // NOTE: まずは原点移動
@@ -137,6 +150,8 @@ window.addEventListener("resize", event => {
 
     imageList.push(card);
   }
+
+  resetMaterial()
 });
 
 const webGLRenderer = new THREE.WebGLRenderer();
@@ -171,7 +186,7 @@ window.addEventListener("load", event => {
   // create a render and set the size
   webGLRenderer.setClearColor(new THREE.Color(0xaaaaff, 1.0));
   webGLRenderer.setSize(canvas.width, canvas.height);
-  webGLRenderer.shadowMapEnabled = true;
+  webGLRenderer.shadowMap.enabled = true;
 
   // position and point the camera to the center of the scene
   camera.position.x = 0;
@@ -184,11 +199,11 @@ window.addEventListener("load", event => {
   spotLight.castShadow = true;
   spotLight.position.set(0, 60, 50);
   spotLight.intensity = 1;
-  spotLight.shadowMapWidth = 2048;
-  spotLight.shadowMapHeight = 2048;
-  spotLight.shadowCameraFov = 120;
-  spotLight.shadowCameraNear = 1;
-  spotLight.shadowCameraFar = 1000;
+  spotLight.shadow.mapSize.width = 2048;
+  spotLight.shadow.mapSize.height = 2048;
+  spotLight.shadow.camera.fov = 120;
+  spotLight.shadow.camera.near = 1;
+  spotLight.shadow.camera.far = 1000;
 
   var ambiLight = new THREE.AmbientLight(0x444444);
   scene.add(ambiLight);
@@ -252,14 +267,14 @@ window.addEventListener("load", event => {
 
   for (let i = 0; i < gridItems.length; i++) {
     const item = gridItems[i];
-    const card = imageList[i];
 
     item.addEventListener("mouseover", e => {
+      const card = imageList[i];
       card.material.uniforms.amount.value = 1.1;
     });
 
     item.addEventListener("mouseout", e => {
-      glitchPass.enabled = false;
+      // glitchPass.enabled = false;
       resetMaterial();
     });
   }
@@ -274,38 +289,26 @@ window.addEventListener("load", event => {
   render();
 
   function render() {
-    imageList.map(mesh => {
-      // console.log(mesh.material.uniforms.time.value += 0.01)
-      mesh.material.uniforms.angle.value = 0.1;
-      // mesh.material.materials.forEach(function(e) {
-      //   e.uniforms.time.value += 0.01;
-      // })
-    });
-    //   cube.material.materials.forEach(function (e) {
-    //     e.uniforms.time.value += 0.01;
-    // });
     requestAnimationFrame(render);
-    composer.render();
-    // webGLRenderer.render(scene, camera);
-
-    // rgbShift.uniforms.amount.value += 0.001;
-    // rgbShift.uniforms.angle.value += 0.001;
-  }
-
-  function resetMaterial() {
-    imageList.map(card => {
-      const material = card.material;
-      material.uniforms.byp.value = 0;
-      material.uniforms.amount.value = 0;
-      material.uniforms.angle.value = 0;
-      material.uniforms.seed.value = 0;
-      material.uniforms.seed_x.value = 0;
-      material.uniforms.seed_y.value = 0;
-      material.uniforms.distortion_x.value = 0;
-      material.uniforms.distortion_y.value = 0;
-      material.uniforms.col_s.value = 0;
-    });
+    // composer.render();
+    webGLRenderer.render(scene, camera);
   }
 });
+
+function resetMaterial() {
+  imageList.map(card => {
+    const material = card.material;
+    material.uniforms.byp.value = 0;
+    material.uniforms.amount.value = 0;
+    material.uniforms.angle.value = 0;
+    material.uniforms.seed.value = 0;
+    material.uniforms.seed_x.value = 0;
+    material.uniforms.seed_y.value = 0;
+    material.uniforms.distortion_x.value = 0;
+    material.uniforms.distortion_y.value = 0;
+    material.uniforms.col_s.value = 0;
+  });
+}
+
 
 export default App;
