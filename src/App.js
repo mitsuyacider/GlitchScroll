@@ -33,7 +33,7 @@ class App extends React.Component {
       <div className="App">
         <header>
           <div className="title">
-            Set images on canvas by div layout
+            Set images in canvas based on div layout
           </div>
         </header>
         <main>
