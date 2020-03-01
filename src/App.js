@@ -23,30 +23,32 @@ let planeGeometries = [];
 let renderPass = {};
 let glitchPass = new GlitchPass();
 
-function App() {
-  return (
-    <div className="App">
-      {/* <div id="WebGL-output"></div> */}
-      <main>
-        <div className="grid" data-grid-container id="WebGL-output">
-          {[...Array(5)].map((x, i) => (
-            <div key={i} className="grid__item" data-grid-item>
-              <div className="grid__item-img" data-src={getFileUrl(i)}></div>
-              <div className="grid__item-letter" data-blotter="">
-                <canvas
-                  className="b-canvas"
-                  width="676"
-                  height="550"
-                  style={{ width: "338px", height: "275px" }}
-                >
-                </canvas>
+
+class App extends React.Component {
+  constructor(props) {
+    super(props);
+  }
+
+  componentDidMount() {}
+
+  render() {
+    return (
+      <div className="App">
+        <main>
+          <div className="grid" data-grid-container id="WebGL-output">
+            {[...Array(5)].map((x, i) => (
+              <div key={i} className="grid__item" data-grid-item>
+                <div className="grid__item-img" data-src={getFileUrl(i)}></div>
+                <div className="grid__item-letter" data-blotter="">
+                  <span>Hello</span>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-      </main>
-    </div>
-  );
+            ))}
+          </div>
+        </main>
+      </div>
+    );
+  }
 }
 
 const throttleFunc = (function() {
@@ -58,34 +60,29 @@ const throttleFunc = (function() {
     glitchPass.enabled = true;
     clearTimeout(timer);
 
-    timer = setTimeout(function() {
+    const refreshScene = () => {
       const canvas = webGLRenderer.domElement;
       resizeCanvas(canvas)
-    
-      const camera = createSceneCamera(canvas)    
-      renderPass.camera = camera;
-    
+
+      const camera = createSceneCamera(canvas)
+
       // NOTE: 前回のplaneをsceneから外す
       planeGeometries.map(card => scene.remove(card));
       planeGeometries = [];
       setupImages()
 
+      renderPass.camera = camera;
+      renderPass.scene = scene
+    }
+
+    refreshScene()
+
+    timer = setTimeout(function() {
+      refreshScene()
       glitchPass.enabled = false;
     }, interval);
   };
 })();
-
-const resizeCanvas = (canvas) => {
-  const pixelRatio = window.devicePixelRatio
-  const grid = document.querySelector("[data-grid-container]");
-  canvas.width = grid.clientWidth;
-  canvas.height = grid.clientHeight;
-  canvas.style.width = `${grid.clientWidth}px`;
-  canvas.style.height = `${grid.clientHeight}px`;
-
-  // Set render size (view port size)
-  webGLRenderer.setSize(canvas.width * pixelRatio, canvas.height * pixelRatio);
-}
 
 window.addEventListener('resize', throttleFunc, false);
 
@@ -94,10 +91,9 @@ window.addEventListener("load", event => {
   const canvas = webGLRenderer.domElement;  
   canvas.classList.add("canvas");
 
-  resizeCanvas(canvas)
-
   const container = document.getElementById("WebGL-output");
   container.insertBefore(canvas, container.firstChild);
+  resizeCanvas(canvas)
 
   // create a camera, which defines where we're looking at.
   const camera = createSceneCamera(canvas)
@@ -157,6 +153,16 @@ const render = (scene, camera) => {
   }
 }
 
+const resizeCanvas = (canvas) => {
+  const pixelRatio = window.devicePixelRatio
+  const grid = document.querySelector("[data-grid-container]");
+  canvas.width = grid.clientWidth;
+  canvas.height = grid.clientHeight;
+  
+  // Set render size (view port size)
+  webGLRenderer.setSize(canvas.width * pixelRatio, canvas.height * pixelRatio);
+}
+
 const setupMouseEvent = () => {
   // NOTE: Mouse event
   const gridItems = document.querySelectorAll("[data-grid-item]");
@@ -174,15 +180,15 @@ const setupMouseEvent = () => {
   }
 }
 
+const originalMaterial = new THREE.ShaderMaterial({
+  uniforms: THREE.DigitalGlitch.uniforms,
+  vertexShader: THREE.DigitalGlitch.vertexShader,
+  fragmentShader: THREE.DigitalGlitch.fragmentShader
+});
+
 const setupImages = () => {
   const canvas = webGLRenderer.domElement;
   const gridItems = document.querySelectorAll("[data-grid-item]");
-
-  const originalMaterial = new THREE.ShaderMaterial({
-    uniforms: THREE.DigitalGlitch.uniforms,
-    vertexShader: THREE.DigitalGlitch.vertexShader,
-    fragmentShader: THREE.DigitalGlitch.fragmentShader
-  });
 
   for (let i = 0; i < gridItems.length; i++) {
     const item = gridItems[i];
@@ -190,9 +196,10 @@ const setupImages = () => {
     const y = item.offsetTop;
 
     const cardTexture = textures[i];
+    
     const width = item.clientWidth;
     const height = item.clientHeight;
-    
+
     // NOTE: Setup material
     const material = originalMaterial.clone();
     material.uniforms.tDiffuse.value = cardTexture;
