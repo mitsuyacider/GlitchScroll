@@ -19,57 +19,19 @@ const webGLRenderer = new THREE.WebGLRenderer();
 const scene = new THREE.Scene();
 const textures = [];
 
-let imageList = [];
+let planeGeometries = [];
 let renderPass = {};
 let glitchPass = new GlitchPass();
 
 function App() {
-  const fileUrlList = [];
-  for (let i = 1; i < 5; i++) {
-    const url = `./img/${i}.jpg`;
-    fileUrlList.push(url);
-  }
-
   return (
     <div className="App">
       {/* <div id="WebGL-output"></div> */}
       <main>
-        <div className="frame">
-          <div className="frame__title-wrap">
-            <h1 className="frame__title">
-              Text Distortion Effects using{" "}
-              <a href="https://blotter.js.org/">Blotter.js</a>
-            </h1>
-            <p className="frame__tagline">
-              The scroll speed determines the distortion
-            </p>
-          </div>
-          <a
-            className="frame__github"
-            href="https://github.com/codrops/TextDistortionEffects/"
-          >
-            GitHub
-          </a>
-          <div className="frame__links">
-            <a href="https://tympanus.net/Tutorials/CustomCursors/">
-              Previous Demo
-            </a>
-            <a href="https://tympanus.net/codrops/?p=38200">Article</a>
-          </div>
-          <div className="frame__demos">
-            <a href="index.html" className="frame__demo frame__demo--current">
-              demo 1
-            </a>
-            <a href="index2.html" className="frame__demo">
-              demo 2
-            </a>
-          </div>
-        </div>
-
         <div className="grid" data-grid-container id="WebGL-output">
-          {[...Array(4)].map((x, i) => (
+          {[...Array(5)].map((x, i) => (
             <div key={i} className="grid__item" data-grid-item>
-              <div className="grid__item-img" data-src={fileUrlList[i]}></div>
+              <div className="grid__item-img" data-src={getFileUrl(i)}></div>
               <div className="grid__item-letter" data-blotter="">
                 <canvas
                   className="b-canvas"
@@ -77,7 +39,6 @@ function App() {
                   height="550"
                   style={{ width: "338px", height: "275px" }}
                 >
-                  A9
                 </canvas>
               </div>
             </div>
@@ -105,8 +66,8 @@ const throttleFunc = (function() {
       renderPass.camera = camera;
     
       // NOTE: 前回のplaneをsceneから外す
-      imageList.map(card => scene.remove(card));
-      imageList = [];
+      planeGeometries.map(card => scene.remove(card));
+      planeGeometries = [];
       setupImages()
 
       glitchPass.enabled = false;
@@ -156,7 +117,17 @@ window.addEventListener("load", event => {
   scene.add(ambiLight);
   scene.add(spotLight);
 
+  // NOTE: Load texture
+  loadTextures()
 
+  // NOTE: Render images. If you want to cancel rendering, call returned function
+  const cancel = render(scene, camera);
+  // cancel()
+});
+
+const render = (scene, camera) => {
+
+  // NOTE: Posteffect applied on resize
   glitchPass.enabled = false;
   glitchPass.goWild = true;
 
@@ -165,7 +136,122 @@ window.addEventListener("load", event => {
 
   renderPass = new RenderPass(scene, camera);
 
-  // NOTE: Load texture
+  const composer = new EffectComposer(webGLRenderer);
+  composer.addPass(renderPass);
+  composer.addPass(glitchPass);
+  composer.addPass(effectCopy);
+
+  let animationId
+  
+  function _render() {
+    animationId = requestAnimationFrame(_render);
+    composer.render();
+    // webGLRenderer.render(scene, camera);
+  }
+
+  _render()
+
+  // NOTE: Stop rendering
+  return () => {
+    cancelAnimationFrame(animationId)
+  }
+}
+
+const setupMouseEvent = () => {
+  // NOTE: Mouse event
+  const gridItems = document.querySelectorAll("[data-grid-item]");
+  for (let i = 0; i < gridItems.length; i++) {
+    const item = gridItems[i];
+
+    item.addEventListener("mouseover", e => {
+      const card = planeGeometries[i];
+      card.material.uniforms.amount.value = 1.1;
+      card.material.uniforms.col_s.value = 0.3;      
+      // card.material.uniforms.angle.value = 1
+    });
+
+    item.addEventListener("mouseout", e => resetMaterial());
+  }
+}
+
+const setupImages = () => {
+  const canvas = webGLRenderer.domElement;
+  const gridItems = document.querySelectorAll("[data-grid-item]");
+
+  const originalMaterial = new THREE.ShaderMaterial({
+    uniforms: THREE.DigitalGlitch.uniforms,
+    vertexShader: THREE.DigitalGlitch.vertexShader,
+    fragmentShader: THREE.DigitalGlitch.fragmentShader
+  });
+
+  for (let i = 0; i < gridItems.length; i++) {
+    const item = gridItems[i];
+    const x = item.offsetLeft;
+    const y = item.offsetTop;
+
+    const cardTexture = textures[i];
+    const width = item.clientWidth;
+    const height = item.clientHeight;
+    
+    // NOTE: Setup material
+    const material = originalMaterial.clone();
+    material.uniforms.tDiffuse.value = cardTexture;
+    material.uniforms.tDisp.value = cardTexture;
+
+    // NOTE: Create a plane geometry to put image on it
+    const cardGeometry = new THREE.PlaneGeometry(width * 2, height * 2, 0, 0);
+    const card = new THREE.Mesh(cardGeometry, material);
+
+    // NOTE: Go to origin
+    card.position.x = (-canvas.width / 2) * 2 + (width / 2) * 2;
+    card.position.y = (canvas.height / 2) * 2 - (height / 2) * 2;
+
+    // NOTE: Move to exact position
+    card.position.x += x * 2;
+    card.position.y -= y * 2;
+
+    scene.add(card);
+    planeGeometries.push(card);
+  }
+
+  resetMaterial();
+}
+
+const createSceneCamera = (canvas) => {
+  const camera = new THREE.OrthographicCamera(
+    -canvas.width,
+    canvas.width,
+    canvas.height,
+    -canvas.height,
+    0,
+    1
+  );
+
+  // position and point the camera to the center of the scene
+  camera.position.x = 0;
+  camera.position.y = 0;
+  camera.position.z = 1;
+  camera.lookAt(new THREE.Vector3(0, 0, 0));
+
+  return camera
+}
+
+const resetMaterial = () => {
+  planeGeometries.map(card => {
+    const material = card.material;
+    material.uniforms.byp.value = 0;
+    material.uniforms.amount.value = 0.0;
+    material.uniforms.angle.value = 0;
+    material.uniforms.seed.value = 0;
+    material.uniforms.seed_x.value = 0;
+    material.uniforms.seed_y.value = 0;
+    material.uniforms.distortion_x.value = 0;
+    material.uniforms.distortion_y.value = 0;
+    material.uniforms.col_s.value = 0;
+  });
+}
+
+const loadTextures = () => {
   const gridItems = document.querySelectorAll("[data-grid-item]");
   let counter = 0
   for (let i = 0; i < gridItems.length; i++) {
@@ -189,113 +275,14 @@ window.addEventListener("load", event => {
       undefined,
       function error( err ) { console.error( 'An error happened.' )}
     );
-  }
-
-  // NOTE: Posteffect applied on resize
-  const composer = new EffectComposer(webGLRenderer);
-  composer.addPass(renderPass);
-  composer.addPass(glitchPass);
-  composer.addPass(effectCopy);
-
-  render();
-
-  function render() {
-    requestAnimationFrame(render);
-    composer.render();
-    // webGLRenderer.render(scene, camera);
-  }
-});
-
-function createSceneCamera(canvas) {
-  const camera = new THREE.OrthographicCamera(
-    -canvas.width,
-    canvas.width,
-    canvas.height,
-    -canvas.height,
-    0,
-    1
-  );
-
-  // position and point the camera to the center of the scene
-  camera.position.x = 0;
-  camera.position.y = 0;
-  camera.position.z = 1;
-  camera.lookAt(new THREE.Vector3(0, 0, 0));
-
-  return camera
+  }  
 }
 
-function setupMouseEvent() {
-  // NOTE: Mouse event
-  const gridItems = document.querySelectorAll("[data-grid-item]");
-  for (let i = 0; i < gridItems.length; i++) {
-    const item = gridItems[i];
+const getFileUrl = (index) => {
+  const totalImage = 10
+  const fileIndex = index % totalImage + 1
 
-    item.addEventListener("mouseover", e => {
-      const card = imageList[i];
-      card.material.uniforms.amount.value = 1.1;
-    });
-
-    item.addEventListener("mouseout", e => resetMaterial());
-  }
-}
-
-function setupImages() {
-  const canvas = webGLRenderer.domElement;
-  const gridItems = document.querySelectorAll("[data-grid-item]");
-
-  const originalMaterial = new THREE.ShaderMaterial({
-    uniforms: THREE.DigitalGlitch.uniforms,
-    vertexShader: THREE.DigitalGlitch.vertexShader,
-    fragmentShader: THREE.DigitalGlitch.fragmentShader
-  });
-
-  for (let i = 0; i < gridItems.length; i++) {
-    const item = gridItems[i];
-    const x = item.offsetLeft;
-    const y = item.offsetTop;
-
-    const cardTexture = textures[i];
-    const width = item.clientWidth;
-    const height = item.clientHeight;
-
-    const cardGeometry = new THREE.PlaneGeometry(width * 2, height * 2, 0, 0);
-
-    const material = originalMaterial.clone();
-    material.uniforms = THREE.UniformsUtils.clone(originalMaterial.uniforms);
-    material.needsUpdate = true;
-    material.uniforms.tDiffuse.value = cardTexture;
-    material.uniforms.tDisp.value = cardTexture;
-
-    const card = new THREE.Mesh(cardGeometry, material);
-
-    // NOTE: まずは原点移動
-    card.position.x = (-canvas.width / 2) * 2 + (width / 2) * 2;
-    card.position.y = (canvas.height / 2) * 2 - (height / 2) * 2;
-
-    card.position.x += x * 2;
-    card.position.y -= y * 2;
-
-    scene.add(card);
-    imageList.push(card);
-  }
-
-  resetMaterial();
-}
-
-function resetMaterial() {
-  imageList.map(card => {
-    const material = card.material;
-    material.uniforms.byp.value = 0;
-    material.uniforms.amount.value = 0;
-    material.uniforms.angle.value = 0;
-    material.uniforms.seed.value = 0;
-    material.uniforms.seed_x.value = 0;
-    material.uniforms.seed_y.value = 0;
-    material.uniforms.distortion_x.value = 0;
-    material.uniforms.distortion_y.value = 0;
-    material.uniforms.col_s.value = 0;
-  });
+  return `./img/${fileIndex}.jpg`
 }
 
 export default App;
