@@ -1,18 +1,15 @@
 import React from "react";
 import "./App.scss";
-// import "threelib/postprocessing/EffectComposer";
+
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { GlitchPass } from "three/examples/jsm/postprocessing/GlitchPass.js";
 import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
 
-// import "threelib/postprocessing/RenderPass";
 import "threelib/postprocessing/ShaderPass";
 import "threelib/postprocessing/DigitalGlitch";
 import "threelib/shaders/RGBShiftShader";
 import "threelib/shaders/CopyShader";
-
-// import "threelib/OBJMTLLoader";
 
 const THREE = require("three");
 const webGLRenderer = new THREE.WebGLRenderer();
@@ -34,8 +31,13 @@ class App extends React.Component {
   render() {
     return (
       <div className="App">
+        <header>
+          <div className="title">
+            Set images on canvas by div layout
+          </div>
+        </header>
         <main>
-          <div className="grid" data-grid-container id="WebGL-output">
+          <div className="grid" data-grid-container>
             {[...Array(5)].map((x, i) => (
               <div key={i} className="grid__item" data-grid-item>
                 <div className="grid__item-img" data-src={getFileUrl(i)}></div>
@@ -52,7 +54,7 @@ class App extends React.Component {
 }
 
 const throttleFunc = (function() {
-  // 停止させたい時間
+  // Deley resize event by interval
   const interval = 350;
   let timer;
 
@@ -64,13 +66,11 @@ const throttleFunc = (function() {
       const canvas = webGLRenderer.domElement;
       resizeCanvas(canvas)
 
-      const camera = createSceneCamera(canvas)
-
-      // NOTE: 前回のplaneをsceneから外す
       planeGeometries.map(card => scene.remove(card));
       planeGeometries = [];
       setupImages()
 
+      const camera = createSceneCamera(canvas)
       renderPass.camera = camera;
       renderPass.scene = scene
     }
@@ -86,12 +86,11 @@ const throttleFunc = (function() {
 
 window.addEventListener('resize', throttleFunc, false);
 
-window.addEventListener("load", event => {
-  // NOTE: Canvas サイズを指定
+window.addEventListener("load", event => {  
   const canvas = webGLRenderer.domElement;  
   canvas.classList.add("canvas");
 
-  const container = document.getElementById("WebGL-output");
+  const container = document.querySelector("[data-grid-container]");
   container.insertBefore(canvas, container.firstChild);
   resizeCanvas(canvas)
 
