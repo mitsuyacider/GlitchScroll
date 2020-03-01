@@ -15,7 +15,13 @@ import "threelib/shaders/CopyShader";
 // import "threelib/OBJMTLLoader";
 
 const THREE = require("three");
+const webGLRenderer = new THREE.WebGLRenderer();
+const scene = new THREE.Scene();
+const textures = [];
+
 let imageList = [];
+let renderPass = {};
+let glitchPass = new GlitchPass();
 
 function App() {
   const fileUrlList = [];
@@ -82,120 +88,61 @@ function App() {
   );
 }
 
-window.addEventListener("resize", event => {
+const throttleFunc = (function() {
+  // 停止させたい時間
+  const interval = 350;
+  let timer;
+
+  return function() {
+    glitchPass.enabled = true;
+    clearTimeout(timer);
+
+    timer = setTimeout(function() {
+      const canvas = webGLRenderer.domElement;
+      resizeCanvas(canvas)
+    
+      const camera = createSceneCamera(canvas)    
+      renderPass.camera = camera;
+    
+      // NOTE: 前回のplaneをsceneから外す
+      imageList.map(card => scene.remove(card));
+      imageList = [];
+      setupImages()
+
+      glitchPass.enabled = false;
+    }, interval);
+  };
+})();
+
+const resizeCanvas = (canvas) => {
+  const pixelRatio = window.devicePixelRatio
   const grid = document.querySelector("[data-grid-container]");
-  const canvas = webGLRenderer.domElement;
-  canvas.classList.add("canvas");
   canvas.width = grid.clientWidth;
   canvas.height = grid.clientHeight;
   canvas.style.width = `${grid.clientWidth}px`;
   canvas.style.height = `${grid.clientHeight}px`;
-  webGLRenderer.setSize(canvas.width, canvas.height);
 
-  camera = new THREE.OrthographicCamera(
-    -canvas.width,
-    canvas.width,
-    canvas.height,
-    -canvas.height,
-    0,
-    1
-  );
+  // Set render size (view port size)
+  webGLRenderer.setSize(canvas.width * pixelRatio, canvas.height * pixelRatio);
+}
 
-  camera.position.x = 0;
-  camera.position.y = 0;
-  camera.position.z = 1;
-  camera.lookAt(new THREE.Vector3(0, 0, 0));
+window.addEventListener('resize', throttleFunc, false);
 
-  renderPass.camera = camera;
-
-  // NOTE: 前回のplaneをsceneから外す
-  imageList.map(card => scene.remove(card));
-  imageList = [];
-
-  // NOTE: 画像を配置する
-  const originalMaterial = new THREE.ShaderMaterial({
-    uniforms: THREE.DigitalGlitch.uniforms,
-    vertexShader: THREE.DigitalGlitch.vertexShader,
-    fragmentShader: THREE.DigitalGlitch.fragmentShader
-  });
-
-  const gridItems = document.querySelectorAll("[data-grid-item]");
-  for (let i = 0; i < gridItems.length; i++) {
-    const item = gridItems[i];
-    const x = item.offsetLeft;
-    const y = item.offsetTop;
-
-    const texture = textures[i];
-    const width = item.clientWidth;
-    const height = item.clientHeight;
-    const cardGeometry = new THREE.PlaneGeometry(width * 2, height * 2, 0, 0);
-    // const material = new THREE.MeshLambertMaterial({ map: texture });
-
-    const material = originalMaterial.clone();
-    material.uniforms = THREE.UniformsUtils.clone(originalMaterial.uniforms);
-    material.needsUpdate = true;
-    material.uniforms.tDiffuse.value = texture;
-    material.uniforms.tDisp.value = texture;
-
-    const card = new THREE.Mesh(cardGeometry, material);
-
-    // NOTE: まずは原点移動
-    card.position.x = (-canvas.width / 2) * 2 + (width / 2) * 2;
-    card.position.y = (canvas.height / 2) * 2 - (height / 2) * 2;
-
-    card.position.x += x * 2;
-    card.position.y -= y * 2;
-
-    scene.add(card);
-
-    imageList.push(card);
-  }
-
-  resetMaterial()
-});
-
-const webGLRenderer = new THREE.WebGLRenderer();
-const scene = new THREE.Scene();
-const textures = [];
-let camera = "";
-let renderPass = "";
 window.addEventListener("load", event => {
   // NOTE: Canvas サイズを指定
-  const grid = document.querySelector("[data-grid-container]");
-
-  const canvas = webGLRenderer.domElement;
+  const canvas = webGLRenderer.domElement;  
   canvas.classList.add("canvas");
-  canvas.width = grid.clientWidth;
-  canvas.height = grid.clientHeight;
-  canvas.style.width = `${grid.clientWidth}px`;
-  canvas.style.height = `${grid.clientHeight}px`;
+
+  resizeCanvas(canvas)
 
   const container = document.getElementById("WebGL-output");
   container.insertBefore(canvas, container.firstChild);
 
   // create a camera, which defines where we're looking at.
-  camera = new THREE.OrthographicCamera(
-    -canvas.width,
-    canvas.width,
-    canvas.height,
-    -canvas.height,
-    0,
-    1
-  );
+  const camera = createSceneCamera(canvas)
 
-  // create a render and set the size
-  webGLRenderer.setClearColor(new THREE.Color(0xaaaaff, 1.0));
-  webGLRenderer.setSize(canvas.width, canvas.height);
-  webGLRenderer.shadowMap.enabled = true;
-
-  // position and point the camera to the center of the scene
-  camera.position.x = 0;
-  camera.position.y = 0;
-  camera.position.z = 1;
-  camera.lookAt(new THREE.Vector3(0, 0, 0));
-
-  // add spotlight for the shadows
-  var spotLight = new THREE.SpotLight(0xffffff);
+  // NOTE: Add right in order to show rendering images
+  const spotLight = new THREE.SpotLight(0xffffff);
   spotLight.castShadow = true;
   spotLight.position.set(0, 60, 50);
   spotLight.intensity = 1;
@@ -205,25 +152,96 @@ window.addEventListener("load", event => {
   spotLight.shadow.camera.near = 1;
   spotLight.shadow.camera.far = 1000;
 
-  var ambiLight = new THREE.AmbientLight(0x444444);
+  const ambiLight = new THREE.AmbientLight(0x444444);
   scene.add(ambiLight);
   scene.add(spotLight);
 
-  var rgbShift = new ShaderPass(THREE.RGBShiftShader);
-  rgbShift.enabled = false;
 
-  renderPass = new RenderPass(scene, camera);
-
-  var glitchPass = new GlitchPass();
   glitchPass.enabled = false;
   glitchPass.goWild = true;
 
-  var effectCopy = new ShaderPass(THREE.CopyShader);
+  const effectCopy = new ShaderPass(THREE.CopyShader);
   effectCopy.renderToScreen = true;
 
-  var composer = new EffectComposer(webGLRenderer);
+  renderPass = new RenderPass(scene, camera);
 
-  // NOTE: 画像を配置する
+  // NOTE: Load texture
+  const gridItems = document.querySelectorAll("[data-grid-item]");
+  let counter = 0
+  for (let i = 0; i < gridItems.length; i++) {
+    const item = gridItems[i];
+    const urlNode = item.querySelector("[data-src]");
+    const url = urlNode.dataset.src;
+
+    const loader = new THREE.TextureLoader();
+    loader.load(
+      url,          
+      function complete(texture) {
+        textures[i] = texture
+        counter++
+
+        if (counter === gridItems.length) {
+          // NOTE: Finish all textures
+          setupImages()
+          setupMouseEvent()
+        }
+      },
+      undefined,
+      function error( err ) { console.error( 'An error happened.' )}
+    );
+  }
+
+  // NOTE: Posteffect applied on resize
+  const composer = new EffectComposer(webGLRenderer);
+  composer.addPass(renderPass);
+  composer.addPass(glitchPass);
+  composer.addPass(effectCopy);
+
+  render();
+
+  function render() {
+    requestAnimationFrame(render);
+    composer.render();
+    // webGLRenderer.render(scene, camera);
+  }
+});
+
+function createSceneCamera(canvas) {
+  const camera = new THREE.OrthographicCamera(
+    -canvas.width,
+    canvas.width,
+    canvas.height,
+    -canvas.height,
+    0,
+    1
+  );
+
+  // position and point the camera to the center of the scene
+  camera.position.x = 0;
+  camera.position.y = 0;
+  camera.position.z = 1;
+  camera.lookAt(new THREE.Vector3(0, 0, 0));
+
+  return camera
+}
+
+function setupMouseEvent() {
+  // NOTE: Mouse event
+  const gridItems = document.querySelectorAll("[data-grid-item]");
+  for (let i = 0; i < gridItems.length; i++) {
+    const item = gridItems[i];
+
+    item.addEventListener("mouseover", e => {
+      const card = imageList[i];
+      card.material.uniforms.amount.value = 1.1;
+    });
+
+    item.addEventListener("mouseout", e => resetMaterial());
+  }
+}
+
+function setupImages() {
+  const canvas = webGLRenderer.domElement;
   const gridItems = document.querySelectorAll("[data-grid-item]");
 
   const originalMaterial = new THREE.ShaderMaterial({
@@ -237,11 +255,7 @@ window.addEventListener("load", event => {
     const x = item.offsetLeft;
     const y = item.offsetTop;
 
-    const urlNode = item.querySelector("[data-src]");
-    const url = urlNode.dataset.src;
-    const cardTexture = THREE.ImageUtils.loadTexture(url);
-    textures.push(cardTexture);
-
+    const cardTexture = textures[i];
     const width = item.clientWidth;
     const height = item.clientHeight;
 
@@ -252,6 +266,7 @@ window.addEventListener("load", event => {
     material.needsUpdate = true;
     material.uniforms.tDiffuse.value = cardTexture;
     material.uniforms.tDisp.value = cardTexture;
+
     const card = new THREE.Mesh(cardGeometry, material);
 
     // NOTE: まずは原点移動
@@ -265,35 +280,8 @@ window.addEventListener("load", event => {
     imageList.push(card);
   }
 
-  for (let i = 0; i < gridItems.length; i++) {
-    const item = gridItems[i];
-
-    item.addEventListener("mouseover", e => {
-      const card = imageList[i];
-      card.material.uniforms.amount.value = 1.1;
-    });
-
-    item.addEventListener("mouseout", e => {
-      // glitchPass.enabled = false;
-      resetMaterial();
-    });
-  }
-
   resetMaterial();
-
-  composer.addPass(renderPass);
-  composer.addPass(glitchPass);
-  composer.addPass(rgbShift);
-  composer.addPass(effectCopy);
-
-  render();
-
-  function render() {
-    requestAnimationFrame(render);
-    // composer.render();
-    webGLRenderer.render(scene, camera);
-  }
-});
+}
 
 function resetMaterial() {
   imageList.map(card => {
@@ -309,6 +297,5 @@ function resetMaterial() {
     material.uniforms.col_s.value = 0;
   });
 }
-
 
 export default App;
