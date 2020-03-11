@@ -162,6 +162,8 @@ const resizeCanvas = (canvas) => {
   webGLRenderer.setSize(canvas.width * pixelRatio, canvas.height * pixelRatio);
 }
 
+let oldScrollY = 0
+
 const setupMouseEvent = () => {
   // NOTE: Mouse event
   const gridItems = document.querySelectorAll("[data-grid-item]");
@@ -177,6 +179,44 @@ const setupMouseEvent = () => {
 
     item.addEventListener("mouseout", e => resetMaterial());
   }
+
+  // NOTE: Scroll event
+  let timeoutId
+  window.addEventListener('scroll', e => {
+    clearTimeout(timeoutId)
+
+    const currentScrollY = document.documentElement.scrollTop
+    const isDownScroll = oldScrollY >= currentScrollY
+    let diff = oldScrollY - currentScrollY
+    let direction = 90
+
+    if (isDownScroll) {
+      diff *= -1
+      direction *= -1
+    }
+
+    applyRgbShader(diff, direction)
+    oldScrollY = currentScrollY
+
+    timeoutId = setTimeout( function () {
+      applyRgbShader(0)
+    }, 500);
+  })
+}
+
+const applyRgbShader = (value, direction = 90) => {
+  planeGeometries.map(card => {
+    const material = card.material;
+    // material.uniforms.byp.value = 0;
+    material.uniforms.amount.value = value / 300.0;
+    material.uniforms.angle.value = direction * ( Math.PI / 180 );
+    // material.uniforms.seed.value = value;
+    // material.uniforms.seed_x.value = 0;
+    // material.uniforms.seed_y.value = value;
+    // material.uniforms.distortion_x.value = value;
+    // material.uniforms.distortion_y.value = 0;
+    // material.uniforms.col_s.value = 0;
+  });
 }
 
 const originalMaterial = new THREE.ShaderMaterial({
