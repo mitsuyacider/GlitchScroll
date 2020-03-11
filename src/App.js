@@ -11,7 +11,10 @@ import "threelib/postprocessing/DigitalGlitch";
 import "threelib/shaders/RGBShiftShader";
 import "threelib/shaders/CopyShader";
 
+import TWEEN from '@tweenjs/tween.js';
+
 const THREE = require("three");
+
 const webGLRenderer = new THREE.WebGLRenderer();
 const scene = new THREE.Scene();
 const textures = [];
@@ -23,7 +26,7 @@ let glitchPass = new GlitchPass();
 
 class App extends React.Component {
   constructor(props) {
-    super(props);
+    super(props)
   }
 
   componentDidMount() {}
@@ -172,8 +175,8 @@ const setupMouseEvent = () => {
 
     item.addEventListener("mouseover", e => {
       const card = planeGeometries[i];
-      card.material.uniforms.amount.value = 1.1;
-      card.material.uniforms.col_s.value = 0.3;      
+      // card.material.uniforms.amount.value = 1.1;
+      card.material.uniforms.col_s.value = 0.4;      
       // card.material.uniforms.angle.value = 1
     });
 
@@ -182,40 +185,52 @@ const setupMouseEvent = () => {
 
   // NOTE: Scroll event
   let timeoutId
+  let offset = 1.5
   window.addEventListener('scroll', e => {
     clearTimeout(timeoutId)
 
     const currentScrollY = document.documentElement.scrollTop
     const isDownScroll = oldScrollY >= currentScrollY
-    let diff = oldScrollY - currentScrollY
+    let diff = Math.floor((oldScrollY - currentScrollY)) * offset
     let direction = 90
-
+    
     if (isDownScroll) {
       diff *= -1
       direction *= -1
     }
 
     applyRgbShader(diff, direction)
-    oldScrollY = currentScrollY
 
-    timeoutId = setTimeout( function () {
-      applyRgbShader(0)
-    }, 500);
+    timeoutId = setTimeout( () => {
+      const coords = { y: diff }; // Start at (0, 0)
+      const animate = (time) => {
+        animationFrame = requestAnimationFrame(animate);
+        TWEEN.update(time);
+      }
+
+      let animationFrame = requestAnimationFrame(animate);              
+
+      new TWEEN.Tween(coords)
+        .to({ y: 0 }, 500)
+        .easing(TWEEN.Easing.Cubic.Out)
+        .onUpdate(() => { // Called after tween.js updates 'coords'.
+          applyRgbShader(coords.y, direction)
+        })
+        .onComplete(() => {
+          cancelAnimationFrame(animationFrame);
+        })
+        .start();
+    }, 300);
+
+    oldScrollY = currentScrollY
   })
 }
 
 const applyRgbShader = (value, direction = 90) => {
   planeGeometries.map(card => {
     const material = card.material;
-    // material.uniforms.byp.value = 0;
     material.uniforms.amount.value = value / 300.0;
     material.uniforms.angle.value = direction * ( Math.PI / 180 );
-    // material.uniforms.seed.value = value;
-    // material.uniforms.seed_x.value = 0;
-    // material.uniforms.seed_y.value = value;
-    // material.uniforms.distortion_x.value = value;
-    // material.uniforms.distortion_y.value = 0;
-    // material.uniforms.col_s.value = 0;
   });
 }
 
