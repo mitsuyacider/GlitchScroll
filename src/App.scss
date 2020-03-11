@@ -51,7 +51,7 @@ main {
     position: relative;
     overflow: hidden;
 
-    // NOTE: For debug
+    // NOTE: For debug    
     // background: red;
 
     span {
@@ -61,6 +61,8 @@ main {
   }
 
   &__item:hover {
+    opacity: 0.5;
+    background: red;
     span {
       color: black;
       background: linear-gradient(to right, #30CFD0 0%, #330867 100%);
