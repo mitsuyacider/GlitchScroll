@@ -61,13 +61,15 @@ main {
   }
 
   &__item:hover {
-    opacity: 0.5;
+    opacity: 0.1;
     background: red;
+    transition: background 0.3s ease-in;
+
     span {
       color: black;
       background: linear-gradient(to right, #30CFD0 0%, #330867 100%);
       -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;      
+      -webkit-text-fill-color: transparent;
     }
   }  
 

@@ -185,11 +185,12 @@ const setupMouseEvent = () => {
 
   // NOTE: Scroll event
   let timeoutId
-  let offset = 1.5
+  let offset = 1.2
   window.addEventListener('scroll', e => {
     clearTimeout(timeoutId)
 
-    const currentScrollY = document.documentElement.scrollTop
+    const scrollTop = Math.max(window.pageYOffset, document.documentElement.scrollTop, document.body.scrollTop)
+    const currentScrollY = scrollTop
     const isDownScroll = oldScrollY >= currentScrollY
     let diff = Math.floor((oldScrollY - currentScrollY)) * offset
     let direction = 90
