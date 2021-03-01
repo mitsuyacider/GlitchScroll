@@ -35,6 +35,6 @@
   "devDependencies": {
     "node-sass": "^4.13.1",
     "react-app-rewired": "^2.1.5",
-    "three": "^0.113.2"
+    "three": "^0.125.0"
   }
 }
